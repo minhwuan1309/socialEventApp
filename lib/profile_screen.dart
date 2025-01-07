@@ -396,6 +396,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           event['description'] ?? 'No Description',
                           style: GoogleFonts.montserrat(color: isDarkMode ? Colors.white70 : Colors.black54, fontSize: 14.0),
                         ),
+                        trailing: IconButton(
+                          icon: Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _showDeleteConfirmation(event['documentId']),
+                        ),
                         onTap: () {
                           Navigator.push(
                             context,
@@ -731,4 +735,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+  void _deleteEvent(String eventId) async {
+    try {
+      await FirebaseFirestore.instance.collection('events').doc(eventId).delete();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Event deleted successfully')),
+      );
+      _refreshEvents(); // Refresh the list
+    } catch (e) {
+      print('Error deleting event: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete event')),
+      );
+    }
+  }
+
+  void _showDeleteConfirmation(String eventId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete Event'),
+        content: Text('Are you sure you want to delete this event?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteEvent(eventId);
+            },
+            child: Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
 }

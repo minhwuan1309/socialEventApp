@@ -18,14 +18,21 @@ class EventDetailScreen extends StatefulWidget {
 
 class _EventDetailScreenState extends State<EventDetailScreen> {
   bool _hasRSVPed = false;
+  bool _isLiked = false;
   String? _userId;
   late int _currentRSVPCount;
+  late int _likeCount;
+  final TextEditingController _commentController = TextEditingController();
+  List<Map<String, dynamic>> _comments = [];
 
   @override
   void initState() {
     super.initState();
     _currentRSVPCount = widget.event.rsvpCount;
+    _likeCount = widget.event.likes.length;
     _fetchUserIdAndCheckRSVP();
+    _loadComments();
+    _fetchLikeStatus();
   }
 
   Future<void> _fetchUserIdAndCheckRSVP() async {
@@ -46,6 +53,70 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         });
       }
     }
+  }
+  Future<void> _fetchLikeStatus() async {
+    final eventRef = FirebaseFirestore.instance.collection('events').doc(widget.event.documentId);
+    final snapshot = await eventRef.get();
+    final likes = List<String>.from(snapshot['likes'] ?? []);
+
+    setState(() {
+      _isLiked = _userId != null && likes.contains(_userId);
+      _likeCount = likes.length;
+    });
+  }
+
+  Future<void> _toggleLike() async {
+    if (_userId == null) return;
+
+    final eventRef = FirebaseFirestore.instance.collection('events').doc(widget.event.documentId);
+    try {
+      if (_isLiked) {
+        await eventRef.update({'likes': FieldValue.arrayRemove([_userId])});
+        setState(() {
+          _isLiked = false;
+          _likeCount--;
+        });
+      } else {
+        await eventRef.update({'likes': FieldValue.arrayUnion([_userId])});
+        setState(() {
+          _isLiked = true;
+          _likeCount++;
+        });
+      }
+    } catch (e) {
+      print('Error toggling like: $e');
+    }
+  }
+
+
+  Future<void> _loadComments() async {
+    final eventRef = FirebaseFirestore.instance.collection('events').doc(widget.event.documentId);
+    final snapshot = await eventRef.get();
+    if (snapshot.exists) {
+      setState(() {
+        _comments = List<Map<String, dynamic>>.from(snapshot['comments'] ?? []);
+      });
+    }
+  }
+
+  Future<void> _addComment(String commentText) async {
+    if (_userId == null || commentText.trim().isEmpty) return;
+
+    final newComment = {
+      'userId': _userId,
+      'text': commentText,
+      'timestamp': Timestamp.now(),
+    };
+
+    final eventRef = FirebaseFirestore.instance.collection('events').doc(widget.event.documentId);
+    await eventRef.update({
+      'comments': FieldValue.arrayUnion([newComment]),
+    });
+
+    setState(() {
+      _comments.add(newComment);
+    });
+    _commentController.clear();
   }
 
   @override
@@ -119,48 +190,61 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   _buildInfoRow(Icons.person, 'Created by', widget.event.createdBy, isDarkMode),
                   _buildInfoRow(Icons.group, 'RSVP Count', '$_currentRSVPCount', isDarkMode),
                   SizedBox(height: 16),
-                  Text(
-                    'Description',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : Colors.black),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(_isLiked ? Icons.thumb_up : Icons.thumb_up_alt_outlined),
+                            color: _isLiked ? Colors.blue : Colors.grey,
+                            onPressed: _toggleLike,
+                          ),
+                          Text('$_likeCount Likes', style: TextStyle(color: isDarkMode ? Colors.white : Colors.black)),
+                        ],
+                      ),
+                      !_hasRSVPed
+                          ? ElevatedButton(
+                        onPressed: () => _incrementRSVPCount(widget.event.documentId),
+                        child: Text('RSVP', style: TextStyle(color: isDarkMode ? Colors.black : Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          textStyle: TextStyle(fontSize: 16),
+                        ),
+                      )
+                          : ElevatedButton(
+                        onPressed: () => _decrementRSVPCount(widget.event.documentId),
+                        child: Text('Cancel RSVP', style: TextStyle(color: isDarkMode ? Colors.black : Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          textStyle: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Divider(),
+                  Text('Comments', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : Colors.black)),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    itemCount: _comments.length,
+                    itemBuilder: (context, index) {
+                      final comment = _comments[index];
+                      return ListTile(
+                        title: Text(comment['text']),
+                        subtitle: Text('By: ${comment['userId']}'),
+                        trailing: Text(DateFormat('MMM d, y - h:mm a').format(comment['timestamp'].toDate())),
+                      );
+                    },
                   ),
                   SizedBox(height: 8),
-                  Text(
-                    widget.event.description,
-                    style: TextStyle(fontSize: 16, color: isDarkMode ? Colors.white70 : Colors.black87),
-                  ),
-                  SizedBox(height: 20),
-                  Text('Tags:', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor)),
-                  SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8.0,
-                    runSpacing: 4.0,
-                    children: widget.event.tags.map((tag) {
-                      return Chip(
-                        label: Text(tag),
-                        backgroundColor: isDarkMode ? Colors.white : Colors.black,
-                        labelStyle: TextStyle(
-                          color: isDarkMode ? Colors.black : Colors.white,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  SizedBox(height: 16),
-                  Center(
-                    child: !_hasRSVPed
-                        ? ElevatedButton(
-                      onPressed: () => _incrementRSVPCount(widget.event.documentId),
-                      child: Text('RSVP', style: TextStyle(color: isDarkMode ? Colors.black : Colors.white)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        textStyle: TextStyle(fontSize: 16),
-                      ),
-                    )
-                        : ElevatedButton(
-                      onPressed: () => _decrementRSVPCount(widget.event.documentId),
-                      child: Text('Cancel RSVP', style: TextStyle(color: isDarkMode ? Colors.black : Colors.white)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        textStyle: TextStyle(fontSize: 16),
+                  TextField(
+                    controller: _commentController,
+                    decoration: InputDecoration(
+                      hintText: 'Add a comment...',
+                      suffixIcon: IconButton(
+                        icon: Icon(Icons.send),
+                        onPressed: () => _addComment(_commentController.text),
                       ),
                     ),
                   ),
