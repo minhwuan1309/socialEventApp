@@ -3,7 +3,7 @@
   "packages": [
     {
       "name": "_flutterfire_internals",
-      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/_flutterfire_internals-1.3.41",
+      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/_flutterfire_internals-1.3.49",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
@@ -117,33 +117,51 @@
     },
     {
       "name": "firebase_auth_platform_interface",
-      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_auth_platform_interface-7.4.4",
+      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_auth_platform_interface-7.5.0",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "firebase_auth_web",
-      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_auth_web-5.12.6",
+      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_auth_web-5.13.6",
       "packageUri": "lib/",
-      "languageVersion": "3.2"
+      "languageVersion": "3.4"
     },
     {
       "name": "firebase_core",
-      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_core-3.4.0",
+      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_core-3.10.0",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "firebase_core_platform_interface",
-      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_core_platform_interface-5.2.1",
+      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_core_platform_interface-5.4.0",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "firebase_core_web",
-      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_core_web-2.17.5",
+      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_core_web-2.19.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "firebase_database",
+      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_database-11.3.0",
       "packageUri": "lib/",
       "languageVersion": "3.2"
+    },
+    {
+      "name": "firebase_database_platform_interface",
+      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_database_platform_interface-0.2.6",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "firebase_database_web",
+      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_database_web-0.2.6+6",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
     },
     {
       "name": "firebase_messaging",
@@ -153,15 +171,15 @@
     },
     {
       "name": "firebase_messaging_platform_interface",
-      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_messaging_platform_interface-4.5.43",
+      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_messaging_platform_interface-4.6.0",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "firebase_messaging_web",
-      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_messaging_web-3.8.13",
+      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_messaging_web-3.10.0",
       "packageUri": "lib/",
-      "languageVersion": "3.2"
+      "languageVersion": "3.4"
     },
     {
       "name": "firebase_storage",
@@ -171,15 +189,15 @@
     },
     {
       "name": "firebase_storage_platform_interface",
-      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_storage_platform_interface-5.1.28",
+      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_storage_platform_interface-5.2.0",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
     {
       "name": "firebase_storage_web",
-      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_storage_web-3.9.13",
+      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/firebase_storage_web-3.10.7",
       "packageUri": "lib/",
-      "languageVersion": "3.2"
+      "languageVersion": "3.4"
     },
     {
       "name": "flutter",
@@ -561,9 +579,9 @@
     },
     {
       "name": "web",
-      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/web-0.5.1",
+      "rootUri": "file:///C:/Users/minhq/AppData/Local/Pub/Cache/hosted/pub.dev/web-1.1.0",
       "packageUri": "lib/",
-      "languageVersion": "3.3"
+      "languageVersion": "3.4"
     },
     {
       "name": "xdg_directories",
@@ -578,7 +596,7 @@
       "languageVersion": "3.4"
     }
   ],
-  "generated": "2025-01-07T06:41:20.273548Z",
+  "generated": "2025-01-08T10:50:32.163666Z",
   "generator": "pub",
   "generatorVersion": "3.6.0",
   "flutterRoot": "file:///D:/flutter",

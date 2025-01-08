@@ -549,6 +549,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final userEmail = user?.email ?? '';
     final userName = user?.displayName ?? '';
     CollectionReference events = FirebaseFirestore.instance.collection('events');
+
     await events.add({
       'title': _titleController.text,
       'description': _descriptionController.text,
@@ -567,6 +568,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'rsvpCount': 0,
       'tags': _selectedTags,
       'image': imageUrl, // Add the image URL here
+      'participants': [], // Khởi tạo trường participants là một mảng rỗng
     });
 
     // Clear the controllers and reset the selected date and time
@@ -581,6 +583,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _image = null; // Clear the selected image
     });
   }
+
 
   Future<void> _showProfileOptions(BuildContext context, String userEmail) async {
     final action = await showDialog<String>(

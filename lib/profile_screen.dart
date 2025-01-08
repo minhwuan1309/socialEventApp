@@ -396,10 +396,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           event['description'] ?? 'No Description',
                           style: GoogleFonts.montserrat(color: isDarkMode ? Colors.white70 : Colors.black54, fontSize: 14.0),
                         ),
-                        trailing: IconButton(
+                        trailing: event['username'] == FirebaseAuth.instance.currentUser?.email
+                            ? IconButton(
                           icon: Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _showDeleteConfirmation(event['documentId']),
-                        ),
+                          onPressed: () => _showDeleteConfirmation(event['documentId'], event['username']),
+                        ) : null,
                         onTap: () {
                           Navigator.push(
                             context,
@@ -735,7 +736,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-  void _deleteEvent(String eventId) async {
+  void _deleteEvent(String eventId, String eventCreator) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null || currentUser.email != eventCreator) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You can only delete your own events')),
+      );
+      return;
+    }
+
     try {
       await FirebaseFirestore.instance.collection('events').doc(eventId).delete();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -750,7 +760,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _showDeleteConfirmation(String eventId) {
+  void _showDeleteConfirmation(String eventId, String eventCreator) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser == null || currentUser.email != eventCreator) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You can only delete your own events')),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -764,7 +783,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _deleteEvent(eventId);
+              _deleteEvent(eventId, eventCreator);
             },
             child: Text('Delete'),
           ),
@@ -772,5 +791,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+
 
 }

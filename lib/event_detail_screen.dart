@@ -6,6 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'event_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'database_service.dart';
+import 'profile_screen.dart';
 
 class EventDetailScreen extends StatefulWidget {
   final Event event;
@@ -34,6 +36,21 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     _loadComments();
     _fetchLikeStatus();
   }
+  Future<void> _syncEventData() async {
+    Map<String, dynamic> eventData = {
+      'title': widget.event.title,
+      'description': widget.event.description,
+      'location': widget.event.location,
+      'date': widget.event.date,
+      'createdBy': widget.event.createdBy,
+      'rsvpCount': _currentRSVPCount,
+      'likes': widget.event.likes,
+      'participants': widget.event.participants,
+    };
+
+    await DatabaseService().syncData(eventData, widget.event.documentId);
+    print('Event data synced!');
+  }
 
   Future<void> _fetchUserIdAndCheckRSVP() async {
     User? user = FirebaseAuth.instance.currentUser;
@@ -54,8 +71,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       }
     }
   }
+
   Future<void> _fetchLikeStatus() async {
-    final eventRef = FirebaseFirestore.instance.collection('events').doc(widget.event.documentId);
+    final eventRef = FirebaseFirestore.instance
+        .collection('events')
+        .doc(widget.event.documentId);
     final snapshot = await eventRef.get();
     final likes = List<String>.from(snapshot['likes'] ?? []);
 
@@ -68,29 +88,37 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   Future<void> _toggleLike() async {
     if (_userId == null) return;
 
-    final eventRef = FirebaseFirestore.instance.collection('events').doc(widget.event.documentId);
+    final eventRef = FirebaseFirestore.instance
+        .collection('events')
+        .doc(widget.event.documentId);
     try {
       if (_isLiked) {
-        await eventRef.update({'likes': FieldValue.arrayRemove([_userId])});
+        await eventRef.update({
+          'likes': FieldValue.arrayRemove([_userId])
+        });
         setState(() {
           _isLiked = false;
           _likeCount--;
         });
       } else {
-        await eventRef.update({'likes': FieldValue.arrayUnion([_userId])});
+        await eventRef.update({
+          'likes': FieldValue.arrayUnion([_userId])
+        });
         setState(() {
           _isLiked = true;
           _likeCount++;
         });
       }
+      await _syncEventData();
     } catch (e) {
       print('Error toggling like: $e');
     }
   }
 
-
   Future<void> _loadComments() async {
-    final eventRef = FirebaseFirestore.instance.collection('events').doc(widget.event.documentId);
+    final eventRef = FirebaseFirestore.instance
+        .collection('events')
+        .doc(widget.event.documentId);
     final snapshot = await eventRef.get();
     if (snapshot.exists) {
       setState(() {
@@ -108,7 +136,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       'timestamp': Timestamp.now(),
     };
 
-    final eventRef = FirebaseFirestore.instance.collection('events').doc(widget.event.documentId);
+    final eventRef = FirebaseFirestore.instance
+        .collection('events')
+        .doc(widget.event.documentId);
     await eventRef.update({
       'comments': FieldValue.arrayUnion([newComment]),
     });
@@ -117,6 +147,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       _comments.add(newComment);
     });
     _commentController.clear();
+    await _syncEventData();
   }
 
   @override
@@ -131,7 +162,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             color: isDarkMode ? Color(0xFF0D1114) : Colors.white,
           ),
           child: AppBar(
-            title: Text('Event Details', style: GoogleFonts.montserrat(color: isDarkMode ? Colors.white : Colors.black)),
+            title: Text('Event Details',
+                style: GoogleFonts.montserrat(
+                    color: isDarkMode ? Colors.white : Colors.black)),
             backgroundColor: Colors.transparent,
             elevation: 0,
           ),
@@ -181,49 +214,154 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     );
                   },
                 ),
+
               SizedBox(height: 16),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildInfoRow(Icons.calendar_today, 'Date', DateFormat('MMM d, y - h:mm a').format(widget.event.date), isDarkMode),
+                  // Dòng thông tin với nút "Edit" và "Delete" dành cho người tạo
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: _buildInfoRow(
+                          Icons.calendar_today,
+                          'Date',
+                          DateFormat('MMM d, y - h:mm a').format(widget.event.date),
+                          isDarkMode,
+                        ),
+                      ),
+                      if (_userId == widget.event.username) // Chỉ hiển thị nếu là người tạo
+                        Row(
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: () => _editEvent(),
+                              icon: Icon(Icons.edit, color: Colors.white, size: 16),
+                              label: Text('Edit', style: TextStyle(color: Colors.white)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                minimumSize: Size(70, 36),
+                                padding: EdgeInsets.symmetric(horizontal: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            ElevatedButton.icon(
+                              onPressed: () => _deleteEvent(widget.event.documentId),
+                              icon: Icon(Icons.delete, color: Colors.white, size: 16),
+                              label: Text('Delete', style: TextStyle(color: Colors.white)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                minimumSize: Size(70, 36),
+                                padding: EdgeInsets.symmetric(horizontal: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
                   _buildInfoRow(Icons.location_on, 'Location', widget.event.location, isDarkMode),
                   _buildInfoRow(Icons.person, 'Created by', widget.event.createdBy, isDarkMode),
-                  _buildInfoRow(Icons.group, 'RSVP Count', '$_currentRSVPCount', isDarkMode),
+                  _buildInfoRow(Icons.group, 'Participants', '$_currentRSVPCount', isDarkMode),
+                  Divider(),
+                  Text(
+                    'Description',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    widget.event.description,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: isDarkMode ? Colors.white70 : Colors.black87,
+                    ),
+                  ),
                   SizedBox(height: 16),
+                  // Các nút Like, Participate, View Participants
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
                         children: [
                           IconButton(
-                            icon: Icon(_isLiked ? Icons.thumb_up : Icons.thumb_up_alt_outlined),
-                            color: _isLiked ? Colors.blue : Colors.grey,
+                            icon: Icon(
+                              _isLiked ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
+                              color: _isLiked ? Colors.blue : Colors.grey,
+                            ),
                             onPressed: _toggleLike,
                           ),
-                          Text('$_likeCount Likes', style: TextStyle(color: isDarkMode ? Colors.white : Colors.black)),
+                          Text(
+                            '$_likeCount Likes',
+                            style: TextStyle(
+                              color: isDarkMode ? Colors.white : Colors.black,
+                            ),
+                          ),
                         ],
                       ),
-                      !_hasRSVPed
-                          ? ElevatedButton(
-                        onPressed: () => _incrementRSVPCount(widget.event.documentId),
-                        child: Text('RSVP', style: TextStyle(color: isDarkMode ? Colors.black : Colors.white)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          textStyle: TextStyle(fontSize: 16),
-                        ),
-                      )
-                          : ElevatedButton(
-                        onPressed: () => _decrementRSVPCount(widget.event.documentId),
-                        child: Text('Cancel RSVP', style: TextStyle(color: isDarkMode ? Colors.black : Colors.white)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          textStyle: TextStyle(fontSize: 16),
-                        ),
+                      Row(
+                        children: [
+                          !_hasRSVPed
+                              ? ElevatedButton(
+                            onPressed: () => _incrementRSVPCount(widget.event.documentId),
+                            child: Text(
+                              'Participate',
+                              style: TextStyle(
+                                color: isDarkMode ? Colors.black : Colors.white,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              textStyle: TextStyle(fontSize: 16),
+                            ),
+                          )
+                              : ElevatedButton(
+                            onPressed: () => _decrementRSVPCount(widget.event.documentId),
+                            child: Text(
+                              'Participated',
+                              style: TextStyle(
+                                color: isDarkMode ? Colors.black : Colors.white,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              textStyle: TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          TextButton(
+                            onPressed: () {
+                              _showParticipantsRealtime(widget.event.documentId);
+                            },
+                            child: Text(
+                              'View Participants',
+                              style: TextStyle(
+                                color: Colors.blue,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                   Divider(),
-                  Text('Comments', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : Colors.black)),
+                  Text(
+                    'Comments',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.white : Colors.black,
+                    ),
+                  ),
                   ListView.builder(
                     shrinkWrap: true,
                     physics: NeverScrollableScrollPhysics(),
@@ -231,9 +369,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     itemBuilder: (context, index) {
                       final comment = _comments[index];
                       return ListTile(
-                        title: Text(comment['text']),
-                        subtitle: Text('By: ${comment['userId']}'),
-                        trailing: Text(DateFormat('MMM d, y - h:mm a').format(comment['timestamp'].toDate())),
+                        title: Text('${comment['userId']}'),
+                        subtitle: Text('   -  ${comment['text']}'),
+                        trailing: Text(
+                          DateFormat('MMM d, y - h:mm a').format(comment['timestamp'].toDate()),
+                        ),
                       );
                     },
                   ),
@@ -249,7 +389,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     ),
                   ),
                 ],
-              ),
+              )
             ],
           ),
         ),
@@ -257,7 +397,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value, bool isDarkMode) {
+  Widget _buildInfoRow(
+      IconData icon, String label, String value, bool isDarkMode) {
     if (label == 'Location') {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -275,7 +416,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 ),
                 children: [
                   TextSpan(
-                    text: widget.event.location,
+                    text: value,
                     style: TextStyle(
                       color: Colors.blue,
                       decoration: TextDecoration.underline,
@@ -283,7 +424,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     recognizer: TapGestureRecognizer()
                       ..onTap = () async {
                         final Uri url = Uri.parse(
-                            "https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(widget.event.location)}");
+                            "https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(value)}");
                         try {
                           await _launchURL(url.toString());
                         } catch (e) {
@@ -299,6 +440,50 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           ],
         ),
       );
+    } else if (label == 'Created by') {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: Colors.blue),
+            SizedBox(width: 8),
+            MouseRegion(
+              cursor: SystemMouseCursors
+                  .click, // Thêm con trỏ "pointer" khi di chuột
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ProfileScreen(userId: widget.event.username),
+                    ),
+                  );
+                },
+                child: RichText(
+                  text: TextSpan(
+                    text: '$label: ',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: isDarkMode ? Colors.white : Colors.black,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: value,
+                        style: TextStyle(
+                          color: Colors.blue,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     } else {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -308,12 +493,20 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             SizedBox(width: 8),
             Text(
               '$label: ',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isDarkMode ? Colors.white : Colors.black),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: isDarkMode ? Colors.white : Colors.black,
+              ),
             ),
             Expanded(
               child: Text(
                 value,
-                style: TextStyle(fontSize: 16, color: isDarkMode ? Colors.white70 : Colors.black87, decoration: TextDecoration.none),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isDarkMode ? Colors.white70 : Colors.black87,
+                  decoration: TextDecoration.none,
+                ),
               ),
             ),
           ],
@@ -334,18 +527,29 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     if (_userId != null) {
       FirebaseFirestore.instance.runTransaction((transaction) async {
         DocumentReference eventRef =
-        FirebaseFirestore.instance.collection('events').doc(documentId);
+            FirebaseFirestore.instance.collection('events').doc(documentId);
         DocumentReference userRef =
-        FirebaseFirestore.instance.collection('users').doc(_userId);
+            FirebaseFirestore.instance.collection('users').doc(_userId);
 
         DocumentSnapshot eventSnapshot = await transaction.get(eventRef);
         DocumentSnapshot userSnapshot = await transaction.get(userRef);
 
         if (!userSnapshot['rsvpEvents'].contains(documentId)) {
+          // Tăng rsvpCount
           int newRSVPCount = eventSnapshot['rsvpCount'] + 1;
-          transaction.update(eventRef, {'rsvpCount': newRSVPCount});
+
+          // Thêm người dùng vào danh sách participants
+          List<dynamic> participants = eventSnapshot['participants'] ?? [];
+          if (!participants.contains(_userId)) {
+            participants.add(_userId);
+          }
+          transaction.update(eventRef, {
+            'rsvpCount': newRSVPCount,
+            'participants': participants,
+          });
+
           transaction.update(userRef, {
-            'rsvpEvents': FieldValue.arrayUnion([documentId])
+            'rsvpEvents': FieldValue.arrayUnion([documentId]),
           });
         }
       }).then((_) {
@@ -353,10 +557,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           _currentRSVPCount += 1;
           _hasRSVPed = true;
         });
+
       }).catchError((error) {
         print("Failed to RSVP: $error");
       });
     }
+    _syncEventData();
   }
 
   void _decrementRSVPCount(String documentId) async {
@@ -371,10 +577,22 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         DocumentSnapshot userSnapshot = await transaction.get(userRef);
 
         if (userSnapshot['rsvpEvents'].contains(documentId)) {
+          // Giảm rsvpCount
           int newRSVPCount = eventSnapshot['rsvpCount'] - 1;
-          transaction.update(eventRef, {'rsvpCount': newRSVPCount});
+
+          // Loại bỏ người dùng khỏi danh sách participants
+          List<dynamic> participants = eventSnapshot['participants'] ?? [];
+          if (participants.contains(_userId)) {
+            participants.remove(_userId);
+          }
+
+          transaction.update(eventRef, {
+            'rsvpCount': newRSVPCount > 0 ? newRSVPCount : 0, // Đảm bảo không âm
+            'participants': participants,
+          });
+
           transaction.update(userRef, {
-            'rsvpEvents': FieldValue.arrayRemove([documentId])
+            'rsvpEvents': FieldValue.arrayRemove([documentId]),
           });
         }
       }).then((_) {
@@ -386,5 +604,227 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         print("Failed to cancel RSVP: $error");
       });
     }
+    _syncEventData();
   }
+
+  void _editEvent() {
+    final titleController = TextEditingController(text: widget.event.title);
+    final descriptionController = TextEditingController(text: widget.event.description);
+    final locationController = TextEditingController(text: widget.event.location);
+    DateTime selectedDate = widget.event.date;
+    TimeOfDay selectedTime = TimeOfDay.fromDateTime(widget.event.date);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Edit Event'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: InputDecoration(labelText: 'Title'),
+                ),
+                TextField(
+                  controller: descriptionController,
+                  decoration: InputDecoration(labelText: 'Description'),
+                ),
+                TextField(
+                  controller: locationController,
+                  decoration: InputDecoration(labelText: 'Location'),
+                ),
+                SizedBox(height: 16),
+                Row(
+                  children: [
+                    Text('Date: '),
+                    TextButton(
+                      onPressed: () async {
+                        final DateTime? pickedDate = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (pickedDate != null) {
+                          setState(() {
+                            selectedDate = pickedDate;
+                          });
+                        }
+                      },
+                      child: Text(DateFormat('MMM d, y').format(selectedDate)),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Text('Time: '),
+                    TextButton(
+                      onPressed: () async {
+                        final TimeOfDay? pickedTime = await showTimePicker(
+                          context: context,
+                          initialTime: selectedTime,
+                        );
+                        if (pickedTime != null) {
+                          setState(() {
+                            selectedTime = pickedTime;
+                          });
+                        }
+                      },
+                      child: Text(selectedTime.format(context)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final DateTime updatedDateTime = DateTime(
+                  selectedDate.year,
+                  selectedDate.month,
+                  selectedDate.day,
+                  selectedTime.hour,
+                  selectedTime.minute,
+                );
+
+                // Cập nhật dữ liệu trong Firestore
+                await FirebaseFirestore.instance
+                    .collection('events')
+                    .doc(widget.event.documentId)
+                    .update({
+                  'title': titleController.text,
+                  'description': descriptionController.text,
+                  'location': locationController.text,
+                  'date': Timestamp.fromDate(updatedDateTime),
+                });
+
+                // Đồng bộ dữ liệu
+                await _syncEventData();
+
+                // Cập nhật giao diện
+                setState(() {
+                  widget.event.title = titleController.text;
+                  widget.event.description = descriptionController.text;
+                  widget.event.location = locationController.text;
+                });
+
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Event updated successfully!')),
+                );
+              },
+              child: Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _deleteEvent(String documentId) async {
+    bool confirm = await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Delete Event'),
+          content: Text('Are you sure you want to delete this event?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm) {
+      await FirebaseFirestore.instance.collection('events').doc(documentId).delete();
+      Navigator.of(context).pop(); // Quay về màn hình trước
+    }
+  }
+
+
+  void _showParticipantsRealtime(String documentId) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('events')
+              .doc(documentId)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return AlertDialog(
+                title: Text('Error'),
+                content: Text('Could not load participants.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('Close'),
+                  ),
+                ],
+              );
+            }
+
+            if (!snapshot.hasData || !snapshot.data!.exists) {
+              return AlertDialog(
+                title: Text('Error'),
+                content: Text('Event does not exist.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('Close'),
+                  ),
+                ],
+              );
+            }
+
+            List<dynamic> participants = snapshot.data!['participants'] ?? [];
+
+            return AlertDialog(
+              title: Text('Participants'),
+              content: participants.isEmpty
+                  ? Text('No participants yet.')
+                  : Container(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: participants.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      leading: Icon(Icons.person, color: Colors.blue),
+                      title: Text(participants[index]),
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('Close'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
 }

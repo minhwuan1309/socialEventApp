@@ -1,7 +1,7 @@
 /**
  * Automatically generated file. DO NOT MODIFY
  */
-package com.ub.purdue_social;
+package com.company.social;
 
 public final class BuildConfig {
   public static final boolean DEBUG = false;

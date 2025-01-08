@@ -24,10 +24,6 @@ class DefaultFirebaseOptions {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
-      case TargetPlatform.iOS:
-        return ios;
-      case TargetPlatform.macOS:
-        return macos;
       case TargetPlatform.windows:
         return windows;
       case TargetPlatform.linux:
@@ -58,24 +54,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '236692996308',
     projectId: 'mangxahoi-4437b',
     storageBucket: 'mangxahoi-4437b.firebasestorage.app',
-  );
-
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyABi5z5m6nZ_FCFDdg4Iv9evAH2MEQ7lvA',
-    appId: '1:1058895914101:ios:1eb92f92c465a86051443c',
-    messagingSenderId: '1058895914101',
-    projectId: 'socialappmark1-b6139',
-    storageBucket: 'socialappmark1-b6139.appspot.com',
-    iosBundleId: 'com.ub.purdueSocial',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyABi5z5m6nZ_FCFDdg4Iv9evAH2MEQ7lvA',
-    appId: '1:1058895914101:ios:1eb92f92c465a86051443c',
-    messagingSenderId: '1058895914101',
-    projectId: 'socialappmark1-b6139',
-    storageBucket: 'socialappmark1-b6139.appspot.com',
-    iosBundleId: 'com.ub.purdueSocial',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

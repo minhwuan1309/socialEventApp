@@ -42,11 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _validateAndLogin() async {
     String email = _emailController.text;
     String password = _passwordController.text;
-
-
-      await Provider.of<custom_auth.AuthProvider>(context, listen: false).login(email, password);
-
-
+    await Provider.of<custom_auth.AuthProvider>(context, listen: false).login(email, password);
   }
 
   void _toggleTheme() {

@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +10,7 @@ import 'home_screen.dart';
 import 'auth_screen.dart';
 import 'interests_screen.dart';
 import 'theme.dart';
+import 'database_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +23,7 @@ Future<void> main() async {
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  print("Handling a background message: ${message.messageId}");
+  print("Handling a background message: \${message.messageId}");
 }
 
 class MyApp extends StatelessWidget {
@@ -65,6 +68,39 @@ class MyApp extends StatelessWidget {
       return HomeScreen();
     } else {
       return AuthScreen();
+    }
+  }
+}
+
+class DatabaseService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseDatabase _realtimeDb = FirebaseDatabase.instance;
+
+  Future<void> syncData(Map<String, dynamic> data, String docId) async {
+    try {
+      // Ghi dữ liệu vào Firestore
+      await _firestore.collection('collection_name').doc(docId).set(data);
+
+      // Ghi dữ liệu vào Realtime Database
+      await _realtimeDb.ref('collection_name/$docId').set(data);
+
+      print('Data synchronized successfully!');
+    } catch (e) {
+      print('Error syncing data: $e');
+    }
+  }
+
+  Future<void> deleteData(String docId) async {
+    try {
+      // Xóa dữ liệu khỏi Firestore
+      await _firestore.collection('collection_name').doc(docId).delete();
+
+      // Xóa dữ liệu khỏi Realtime Database
+      await _realtimeDb.ref('collection_name/$docId').remove();
+
+      print('Data deleted successfully!');
+    } catch (e) {
+      print('Error deleting data: $e');
     }
   }
 }

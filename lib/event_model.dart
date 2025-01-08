@@ -4,15 +4,16 @@ class Event {
   final String documentId;
   final String createdBy;
   final int rsvpCount;
-  final DateTime date;
-  final String description;
-  final String location;
-  final String title;
+  DateTime date;
+  String description;
+  String location;
+  String title;
   final String username;
   final List<String> tags;
   final String? image;
   final List<String> likes;
   final List<Map<String, dynamic>> comments;
+  final List<String> participants;
 
   Event({
     required this.documentId,
@@ -23,10 +24,11 @@ class Event {
     required this.location,
     required this.title,
     required this.username,
-    required this.tags, // Add this to the constructor
+    required this.tags,
     required this.image,
     required this.likes,
     required this.comments,
+    required this.participants,
   });
 
   factory Event.fromJson(String id, Map<String, dynamic> json) {
@@ -43,6 +45,7 @@ class Event {
       image: json['image'],
       likes: List<String>.from(json['likes'] ?? []),
       comments: List<Map<String, dynamic>>.from(json['comments'] ?? []),
+      participants: List<String>.from(json['participants'] ?? []),
     );
   }
 
@@ -59,6 +62,7 @@ class Event {
       'image': image,
       'likes': likes,
       'comments': comments,
+      'participants': participants,
     };
   }
 }
